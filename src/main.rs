@@ -1,7 +1,6 @@
 extern crate clap;
 
-use clap::{App, Arg, ArgMatches};
-use dht_hal_drv::{dht_read, dht_split_init, dht_split_read, DhtError, DhtType, DhtValue};
+use dht_hal_drv::{dht_read, DhtType};
 use embedded_hal::digital::v2::{InputPin, OutputPin};
 use rppal::gpio::{Gpio, IoPin, Mode};
 use spin_sleep;
@@ -71,32 +70,7 @@ impl OutputPin for OpenPin {
     }
 }
 
-fn cli_matches() -> ArgMatches<'static> {
-    App::new("DHT tester")
-        .author("Rumato Estorsky")
-        .about("Performs DHT sensors test on Raspberry Pi")
-        .arg(
-            Arg::with_name("pin")
-                .short("p")
-                .long("pin")
-                .value_name("DHT_PIN")
-                .help("Pin number where DHT sensor connected to")
-                .required(true),
-        )
-        .arg(
-            Arg::with_name("type")
-                .long("type")
-                .short("t")
-                .value_name("SENSOR_TYPE")
-                .required(true)
-                .help("DHT sensor type")
-                .possible_values(&["DHT11", "DHT21", "DHT22"]),
-        )
-        .get_matches()
-}
-
 fn main() {
-    let dht_type = DhtType::DHT11;
     let pin = 24_u8;
 
     println!("Initialized at pin {}", pin);
@@ -126,29 +100,4 @@ fn main() {
         };
         thread::sleep(time::Duration::from_secs(2));
     }
-}
-
-/// Example of reading using open drain pin emulation
-/// We could pass here `pin` as IoPin struct and change it's state between DHT calls
-fn read_dht_splitted(pin: &mut OpenPin) -> Result<DhtValue, DhtError> {
-    // Implement custom HW specific delay logic that DHT driver is not aware of
-    let mut delay_us = |d: u16| {
-        // We are using here more accurate delays than in std library
-        spin_sleep::sleep(time::Duration::from_micros(d as u64));
-    };
-
-    pin.switch_output();
-    let init = dht_split_init(pin, &mut delay_us);
-    if init.is_err() {
-        // You can skip this error check if you like
-        return Err(init.err().unwrap());
-    }
-
-    // Should convert pin back to input
-    pin.switch_input();
-
-    // Now let's read some data
-    // Sometimes delays are takes exact same Duration as it was provided
-    // You can pass here empty delay closure as well
-    dht_split_read(DhtType::DHT11, pin, &mut delay_us)
 }
