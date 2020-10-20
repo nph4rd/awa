@@ -1,0 +1,15 @@
+[package]
+name = "dht11-test"
+version = "0.1.0"
+authors = ["awa"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+dht-hal-drv = "0.2.1"
+clap = "2.33.0"
+void = "1.0.2"
+spin_sleep = "0.3.7"
+rppal = { version = "0.11.3"}
+embedded-hal = { version="0.2.3", features = ["unproven"]}
