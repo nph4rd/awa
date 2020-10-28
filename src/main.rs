@@ -7,9 +7,9 @@ use spin_sleep;
 use std::{thread, time};
 use void;
 
-/**
- * Raspberry pi does not have open drain pins so we have to emulate it.
- */
+// We're using a modified version of the example from
+// https://github.com/rustrum/dht-hal-drv/blob/master/examples/rpi-rppal/src/main.rs 
+
 struct OpenPin {
     iopin: IoPin,
     mode: Mode,
@@ -39,7 +39,6 @@ impl OpenPin {
     }
 }
 
-// Current rppal implementation does not support embedded_hal::gpio::v2 pins API.
 impl InputPin for OpenPin {
     type Error = void::Void;
 
@@ -47,13 +46,11 @@ impl InputPin for OpenPin {
         Ok(self.iopin.is_high())
     }
 
-    /// Is the input pin low?
     fn is_low(&self) -> Result<bool, Self::Error> {
         Ok(self.iopin.is_low())
     }
 }
 
-// Current rppal implementation does not support embedded_hal::gpio::v2 pins API.
 impl OutputPin for OpenPin {
     type Error = void::Void;
 
@@ -88,15 +85,12 @@ fn main() {
         let readings = dht_read(DhtType::DHT11, &mut opin, &mut |d| {
             spin_sleep::sleep(time::Duration::from_micros(d as u64))
         });
-        // let readings = read_dht_splitted(&mut opin);
 
         match readings {
             Ok(res) => {
                 println!("DHT readins {}C {}%", res.temperature(), res.humidity());
             }
-            Err(err) => {
-                println!("DHT ERROR {:?}", err);
-            }
+            Err(_) => ()
         };
         thread::sleep(time::Duration::from_secs(2));
     }
