@@ -8,7 +8,7 @@ use std::{thread, time};
 use void;
 
 // We're using a modified version of the example from
-// https://github.com/rustrum/dht-hal-drv/blob/master/examples/rpi-rppal/src/main.rs 
+// https://github.com/rustrum/dht-hal-drv/blob/master/examples/rpi-rppal/src/main.rs
 
 struct OpenPin {
     iopin: IoPin,
@@ -68,21 +68,29 @@ impl OutputPin for OpenPin {
 }
 
 fn main() {
-    let pin = 24_u8;
+    let dht11_pin = 24_u8;
+    let valve_pin = 2_u8;
 
-    println!("Initialized at pin {}", pin);
+    println!("DHT11 initialized at pin {}", dht11_pin);
+    println!("Solenoid valve initialized at pin {}", valve_pin);
 
-    let gpio = Gpio::new().expect("Can not init Gpio structure");
+    let dht11_gpio = Gpio::new().expect("Can not init Gpio structure");
+    let valve_gpio = Gpio::new().expect("Can not init Gpio structure");
 
-    let iopin = gpio
-        .get(pin)
-        .expect("Was not able to get Pin")
+    let dht11_iopin = dht11_gpio
+        .get(dht11_pin)
+        .expect("Was not able to get Pin for DHT11")
         .into_io(Mode::Input);
+    let valve_iopin = valve_gpio
+        .get(valve_pin)
+        .expect("Was not able to get Pin for solenoid valve")
+        .into_io(Mode::Output);
 
-    let mut opin = OpenPin::new(iopin);
+    let mut dht11_opin = OpenPin::new(dht11_iopin);
+    let mut valve_opin = OpenPin::new(valve_iopin);
 
     loop {
-        let readings = dht_read(DhtType::DHT11, &mut opin, &mut |d| {
+        let readings = dht_read(DhtType::DHT11, &mut dht11_opin, &mut |d| {
             spin_sleep::sleep(time::Duration::from_micros(d as u64))
         });
 
@@ -90,8 +98,14 @@ fn main() {
             Ok(res) => {
                 println!("DHT readins {}C {}%", res.temperature(), res.humidity());
             }
-            Err(_) => ()
+            Err(_) => (),
         };
+
+        // Turn valve on/off
+        valve_opin.set_high().unwrap();
+        thread::sleep(time::Duration::from_secs(10));
+        valve_opin.set_low().unwrap();
+
         thread::sleep(time::Duration::from_secs(2));
     }
 }
