@@ -103,8 +103,10 @@ fn main() {
 
         // Turn valve on/off
         valve_opin.set_high().unwrap();
-        thread::sleep(time::Duration::from_secs(10));
+        println!("Valve pin was set high");
+        thread::sleep(time::Duration::from_secs(5));
         valve_opin.set_low().unwrap();
+        println!("Valve pin was set low");
 
         thread::sleep(time::Duration::from_secs(2));
     }
