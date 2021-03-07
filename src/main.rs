@@ -71,19 +71,19 @@ fn main() {
     let dht11_pin = 24_u8;
     let valve_pin = 2_u8;
 
-    println!("DHT11 initialized at pin {}", dht11_pin);
-    println!("Solenoid valve initialized at pin {}", valve_pin);
+    println!("DHT11 sensor was initialized at pin {}", dht11_pin);
+    println!("Solenoid valve was initialized at pin {}", valve_pin);
 
-    let dht11_gpio = Gpio::new().expect("Can not init Gpio structure");
-    let valve_gpio = Gpio::new().expect("Can not init Gpio structure");
+    let dht11_gpio = Gpio::new().expect("Can not init Gpio structure for the DHT11 sesnsor");
+    let valve_gpio = Gpio::new().expect("Can not init Gpio structure for the solenoid valve");
 
     let dht11_iopin = dht11_gpio
         .get(dht11_pin)
-        .expect("Was not able to get Pin for DHT11")
+        .expect("Was not able to get Pin for the DHT11 sensor")
         .into_io(Mode::Input);
     let valve_iopin = valve_gpio
         .get(valve_pin)
-        .expect("Was not able to get Pin for solenoid valve")
+        .expect("Was not able to get Pin for the solenoid valve")
         .into_io(Mode::Output);
 
     let mut dht11_opin = OpenPin::new(dht11_iopin);
@@ -97,17 +97,17 @@ fn main() {
         match readings {
             Ok(res) => {
                 println!("DHT readins {}C {}%", res.temperature(), res.humidity());
+                if res.temperature() > 14.0 && res.humidity() > 75.0 {
+                    // Turn valve on/off
+                    println!("Watering plant for 3 seconds...");
+                    valve_opin.set_high().unwrap();
+                    thread::sleep(time::Duration::from_secs(3));
+                    valve_opin.set_low().unwrap();
+                }
             }
             Err(_) => (),
         };
 
-        // Turn valve on/off
-        valve_opin.set_high().unwrap();
-        println!("Valve pin was set high");
-        thread::sleep(time::Duration::from_secs(5));
-        valve_opin.set_low().unwrap();
-        println!("Valve pin was set low");
-
-        thread::sleep(time::Duration::from_secs(2));
+        thread::sleep(time::Duration::from_secs(10));
     }
 }
