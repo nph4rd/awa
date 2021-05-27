@@ -97,17 +97,17 @@ fn main() {
         match readings {
             Ok(res) => {
                 println!("DHT readins {}C {}%", res.temperature(), res.humidity());
-                if res.temperature() > 14.0 && res.humidity() > 75.0 {
+                if res.temperature() > 15.0 && res.humidity() < 80.0 {
                     // Turn valve on/off
-                    println!("Watering plant for 3 seconds...");
-                    valve_opin.set_high().unwrap();
-                    thread::sleep(time::Duration::from_secs(3));
+                    println!("Watering plant...");
                     valve_opin.set_low().unwrap();
+                    thread::sleep(time::Duration::from_secs(1));
+                    valve_opin.set_high().unwrap();
                 }
             }
             Err(_) => (),
         };
 
-        thread::sleep(time::Duration::from_secs(10));
+        thread::sleep(time::Duration::from_secs(3600));
     }
 }
