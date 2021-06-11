@@ -6,6 +6,9 @@ use rppal::gpio::{Gpio, IoPin, Mode};
 use spin_sleep;
 use std::{thread, time};
 use void;
+use std::env;
+use std::fs::File;
+use std::io::Write;
 
 // We're using a modified version of the example from
 // https://github.com/rustrum/dht-hal-drv/blob/master/examples/rpi-rppal/src/main.rs
@@ -67,6 +70,28 @@ impl OutputPin for OpenPin {
     }
 }
 
+/// Log results from a reading and whether
+/// the plant was watered or not.
+fn log(watered: bool, temp: f32, humi: f32) {
+	let log_msg: String;
+    match watered {
+        true => log_msg = format!("Last reading: \ntemperature: {}\nhumidity: {}\n Watered plant: yes", temp, humi),
+        false => log_msg = format!("Last reading: \ntemperature: {}\nhumidity: {}\n Watered plant: no", temp, humi),
+    }
+
+    // Create a temporary file.
+    let temp_directory = env::temp_dir();
+    let temp_file = temp_directory.join("/tmp/awa_data.txt");
+
+    // Open a file in write-only (ignoring errors).
+    // This creates the file if it does not exist (and empty the file if it exists).
+    let mut file = File::create(temp_file).unwrap();
+
+    // Write a &str in the file (ignoring the result).
+    writeln!(&mut file, "{}", log_msg).unwrap();
+
+}
+
 fn main() {
     let dht11_pin = 24_u8;
     let valve_pin = 2_u8;
@@ -96,18 +121,21 @@ fn main() {
 
         match readings {
             Ok(res) => {
-                println!("DHT readins {}C {}%", res.temperature(), res.humidity());
-                if res.temperature() > 15.0 && res.humidity() < 80.0 {
+                let mut watered: bool = false;
+                println!("DHT readings {}C {}%", res.temperature(), res.humidity());
+                if res.temperature() > 15.0 && res.humidity() < 85.0 {
+                    watered = true;
                     // Turn valve on/off
                     println!("Watering plant...");
                     valve_opin.set_low().unwrap();
                     thread::sleep(time::Duration::from_secs(1));
                     valve_opin.set_high().unwrap();
                 }
+				log(watered, res.temperature(), res.humidity());
             }
             Err(_) => (),
         };
 
-        thread::sleep(time::Duration::from_secs(3600));
+        thread::sleep(time::Duration::from_secs(1800));
     }
 }
