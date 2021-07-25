@@ -136,6 +136,6 @@ fn main() {
             Err(_) => (),
         };
 
-        thread::sleep(time::Duration::from_secs(1800));
+        thread::sleep(time::Duration::from_secs(10800));
     }
 }
