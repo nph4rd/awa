@@ -1,9 +1,7 @@
 extern crate clap;
 
-use dht_hal_drv::{dht_read, DhtType};
 use embedded_hal::digital::v2::{InputPin, OutputPin};
 use rppal::gpio::{Gpio, IoPin, Mode};
-use spin_sleep;
 use std::{thread, time};
 use void;
 use std::env;
@@ -93,49 +91,27 @@ fn log(watered: bool, temp: f32, humi: f32) {
 }
 
 fn main() {
-    let dht11_pin = 24_u8;
     let valve_pin = 2_u8;
 
-    println!("DHT11 sensor was initialized at pin {}", dht11_pin);
     println!("Solenoid valve was initialized at pin {}", valve_pin);
 
-    let dht11_gpio = Gpio::new().expect("Can not init Gpio structure for the DHT11 sesnsor");
     let valve_gpio = Gpio::new().expect("Can not init Gpio structure for the solenoid valve");
 
-    let dht11_iopin = dht11_gpio
-        .get(dht11_pin)
-        .expect("Was not able to get Pin for the DHT11 sensor")
-        .into_io(Mode::Input);
     let valve_iopin = valve_gpio
         .get(valve_pin)
         .expect("Was not able to get Pin for the solenoid valve")
         .into_io(Mode::Output);
 
-    let mut dht11_opin = OpenPin::new(dht11_iopin);
     let mut valve_opin = OpenPin::new(valve_iopin);
 
     loop {
-        let readings = dht_read(DhtType::DHT11, &mut dht11_opin, &mut |d| {
-            spin_sleep::sleep(time::Duration::from_micros(d as u64))
-        });
-
-        match readings {
-            Ok(res) => {
-                let mut watered: bool = false;
-                println!("DHT readings {}C {}%", res.temperature(), res.humidity());
-                if res.temperature() > 15.0 && res.humidity() < 85.0 {
-                    watered = true;
-                    // Turn valve on/off
-                    println!("Watering plant...");
-                    valve_opin.set_low().unwrap();
-                    thread::sleep(time::Duration::from_secs(1));
-                    valve_opin.set_high().unwrap();
-                }
-				log(watered, res.temperature(), res.humidity());
-            }
-            Err(_) => (),
-        };
-
+        let watered = true;
+        // Turn valve on/off
+        println!("Watering plant...");
+        valve_opin.set_low().unwrap();
+        thread::sleep(time::Duration::from_secs(1));
+        valve_opin.set_high().unwrap();
+        log(watered, 10.0, 99.0);
         thread::sleep(time::Duration::from_secs(10800));
     }
 }
